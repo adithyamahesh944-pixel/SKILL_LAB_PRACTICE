@@ -1,0 +1,12 @@
+{
+  "name": "automobile-spare-parts-inventory",
+  "version": "1.0.0",
+  "description": "Automobile Spare Parts Inventory Management System",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  }
+}

@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AUTO.SYS — Spare Parts Inventory</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <span class="brand-icon">&#9881;</span>
+      <div>
+        <div class="brand-name">AUTO.SYS</div>
+        <div class="brand-sub">PARTS INVENTORY</div>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-label">MENU</div>
+      <a class="nav-item active" onclick="navigate('dashboard')" data-page="dashboard">
+        <span class="nav-icon">&#9783;</span> Dashboard
+      </a>
+      <a class="nav-item" onclick="navigate('inventory')" data-page="inventory">
+        <span class="nav-icon">&#9776;</span> Inventory
+      </a>
+      <a class="nav-item" onclick="navigate('add-part')" data-page="add-part">
+        <span class="nav-icon">&#43;</span> Add Part
+      </a>
+    </nav>
+    <div class="sidebar-footer">
+      <span class="footer-dot"></span> System Online
+    </div>
+  </aside>
+
+  <!-- Main content area -->
+  <main class="main">
+    <!-- DASHBOARD PAGE -->
+    <div id="page-dashboard" class="page">
+      <div class="page-header">
+        <div>
+          <h1 class="page-title">Cockpit</h1>
+          <p class="page-sub">OVERVIEW &amp; ALERTS</p>
+        </div>
+        <div class="header-actions">
+          <button class="btn btn-outline" onclick="navigate('inventory')">VIEW FULL INVENTORY</button>
+          <button class="btn btn-primary" onclick="navigate('add-part')">ADD PART &rarr;</button>
+        </div>
+      </div>
+
+      <!-- KPI Cards -->
+      <div class="kpi-grid" id="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-label">TOTAL PARTS</div>
+          <div class="kpi-value" id="kpi-total">—</div>
+          <div class="kpi-sub">Unique items in stock</div>
+        </div>
+        <div class="kpi-card kpi-green">
+          <div class="kpi-label">INVENTORY VALUE</div>
+          <div class="kpi-value" id="kpi-value">—</div>
+          <div class="kpi-sub">Total capital bound</div>
+        </div>
+        <div class="kpi-card kpi-amber">
+          <div class="kpi-label">LOW STOCK</div>
+          <div class="kpi-value kpi-amber-val" id="kpi-low">—</div>
+          <div class="kpi-sub">Items at or below 5 units</div>
+        </div>
+        <div class="kpi-card kpi-red">
+          <div class="kpi-label">OUT OF STOCK</div>
+          <div class="kpi-value kpi-red-val" id="kpi-out">—</div>
+          <div class="kpi-sub">Immediate action required</div>
+        </div>
+      </div>
+
+      <!-- Charts row -->
+      <div class="charts-row">
+        <div class="chart-card">
+          <div class="chart-title">STOCK VALUE BY CATEGORY</div>
+          <div class="chart-sub">Value distribution across component groups</div>
+          <div id="category-bars"></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">PLATFORM DISTRIBUTION</div>
+          <div class="chart-sub">Parts count per vehicle type</div>
+          <div id="vehicle-list"></div>
+        </div>
+      </div>
+
+      <!-- Low stock alerts -->
+      <div class="alert-card" id="alert-section" style="display:none">
+        <div class="alert-header">LOW STOCK ALERTS</div>
+        <table class="table" id="alert-table">
+          <thead>
+            <tr><th>ID</th><th>Part Name</th><th>Category</th><th>Quantity</th><th>Vehicle</th><th>Action</th></tr>
+          </thead>
+          <tbody id="alert-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- INVENTORY PAGE -->
+    <div id="page-inventory" class="page hidden">
+      <div class="page-header">
+        <div>
+          <h1 class="page-title">Inventory</h1>
+          <p class="page-sub">ALL SPARE PARTS</p>
+        </div>
+        <button class="btn btn-primary" onclick="navigate('add-part')">ADD PART &rarr;</button>
+      </div>
+
+      <!-- Filters -->
+      <div class="filter-bar">
+        <input id="search-input" class="input" type="text" placeholder="Search by name, category or ID..." oninput="applyFilters()" />
+        <select id="filter-category" class="select" onchange="applyFilters()">
+          <option value="">All Categories</option>
+        </select>
+        <select id="filter-vehicle" class="select" onchange="applyFilters()">
+          <option value="">All Vehicles</option>
+        </select>
+        <label class="checkbox-label">
+          <input type="checkbox" id="filter-low-stock" onchange="applyFilters()" />
+          Low Stock Only
+        </label>
+      </div>
+
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>ID</th><th>Part Name</th><th>Category</th>
+              <th>Size / Spec</th><th>Qty</th><th>Price</th>
+              <th>Vehicle</th><th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="parts-tbody"></tbody>
+        </table>
+        <div id="parts-empty" class="empty-state hidden">No parts found.</div>
+      </div>
+    </div>
+
+    <!-- ADD / EDIT PART PAGE -->
+    <div id="page-add-part" class="page hidden">
+      <div class="page-header">
+        <div>
+          <h1 class="page-title" id="form-title">Add Spare Part</h1>
+          <p class="page-sub" id="form-sub">NEW INVENTORY ENTRY</p>
+        </div>
+        <button class="btn btn-outline" onclick="navigate('inventory')">&larr; BACK</button>
+      </div>
+
+      <div class="form-card">
+        <form id="part-form" onsubmit="submitForm(event)">
+          <input type="hidden" id="edit-id" value="" />
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label">Part Name *</label>
+              <input class="input" id="f-name" type="text" placeholder="e.g. Brake Pad" required />
+              <span class="form-err" id="err-name"></span>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Category *</label>
+              <input class="input" id="f-category" type="text" placeholder="e.g. Braking System" required list="category-list" />
+              <datalist id="category-list"></datalist>
+              <span class="form-err" id="err-category"></span>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Size / Specification *</label>
+              <input class="input" id="f-size" type="text" placeholder="e.g. Disc Type, M10, 14mm" required />
+              <span class="form-err" id="err-size"></span>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Vehicle Type *</label>
+              <select class="select" id="f-vehicle" required>
+                <option value="">Select vehicle type</option>
+                <option value="Bike">Bike</option>
+                <option value="Car">Car</option>
+                <option value="Truck">Truck</option>
+              </select>
+              <span class="form-err" id="err-vehicle"></span>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Quantity *</label>
+              <input class="input" id="f-qty" type="number" min="0" placeholder="e.g. 25" required />
+              <span class="form-err" id="err-qty"></span>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Price (&#8377;) *</label>
+              <input class="input" id="f-price" type="number" min="0" step="0.01" placeholder="e.g. 450.00" required />
+              <span class="form-err" id="err-price"></span>
+            </div>
+          </div>
+          <div class="form-actions">
+            <button type="button" class="btn btn-outline" onclick="navigate('inventory')">CANCEL</button>
+            <button type="submit" class="btn btn-primary" id="submit-btn">SAVE PART</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </main>
+
+  <!-- Delete confirmation modal -->
+  <div id="modal-overlay" class="modal-overlay hidden">
+    <div class="modal">
+      <div class="modal-title">Delete Part</div>
+      <p class="modal-body">Are you sure you want to delete <strong id="modal-part-name"></strong>? This action cannot be undone.</p>
+      <div class="modal-actions">
+        <button class="btn btn-outline" onclick="closeModal()">CANCEL</button>
+        <button class="btn btn-danger" id="modal-confirm-btn">DELETE</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="toast hidden"></div>
+
+  <script src="script.js"></script>
+</body>
+</html>
